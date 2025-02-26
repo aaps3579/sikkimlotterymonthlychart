@@ -9,17 +9,21 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "luxon": "^3.5.0",
+    "next": "15.1.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "next": "15.1.7"
+    "react-virtualized": "^9.22.6"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@eslint/eslintrc": "^3",
+    "@types/luxon": "^3.4.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/react-virtualized": "^9.22.2",
     "eslint": "^9",
     "eslint-config-next": "15.1.7",
-    "@eslint/eslintrc": "^3"
+    "typescript": "^5"
   }
 }
