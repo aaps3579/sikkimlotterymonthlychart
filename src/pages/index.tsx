@@ -276,7 +276,7 @@ export default function Home({ token }: InferGetServerSidePropsType<typeof getSe
           height={500}
           rowHeight={30}
           rowCount={selectedData.length}
-          width={700}
+          width={800}
         />
         {/* </AutoSizer> */}
       </main>
