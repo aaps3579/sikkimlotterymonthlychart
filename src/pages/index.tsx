@@ -214,72 +214,74 @@ export default function Home({ token }: InferGetServerSidePropsType<typeof getSe
 
 
   return (
-    <>
-      <div className={`${styles.page}`}>
-        <main className={styles.main}>
-          <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', }}>
-              <select onChange={(e) => changeChart(e.target.value)} value={chart} id="chart-select" style={{ padding: '4px', fontSize: '14px', width: '100px' }}>
-                <option value="A">A Chart</option>
-                <option value="B">B Chart</option>
-                <option value="C">C Chart</option>
-              </select>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <input
-                type="checkbox"
-                onChange={(e) => selectAll(e.target.checked)}
-                style={{ marginRight: '8px' }}
-              />
-              <label style={{ fontSize: '14px', color: '#333' }}>Select All</label>
-            </div>
-
+    <div className={`${styles.page}`}>
+      <main className={styles.main}>
+        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', marginRight: '16px' }}>
+            <select onChange={(e) => changeChart(e.target.value)} value={chart} id="chart-select" style={{ padding: '4px', fontSize: '14px', width: '100px' }}>
+              <option value="A">A Chart</option>
+              <option value="B">B Chart</option>
+              <option value="C">C Chart</option>
+            </select>
           </div>
-          <MultiGrid
-            ref={ref}
-            cellRenderer={({ columnIndex, key, rowIndex, style }) => {
-              const cellStyle = { ...style }
-              cellStyle.backgroundColor = 'white';
-              cellStyle.textAlign = 'center';
-              cellStyle.display = 'flex';
-              cellStyle.justifyContent = 'center';
-              cellStyle.alignItems = 'center';
-              cellStyle.border = '1px solid #c8e1ff';
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <input
+              type="checkbox"
+              onChange={(e) => selectAll(e.target.checked)}
+              style={{ marginRight: '8px' }}
+            />
+            <label style={{ fontSize: '14px', color: '#333' }}>Select All</label>
+          </div>
+        </div>
 
-              if (selectedData[rowIndex][columnIndex].isTop) {
-                cellStyle.backgroundColor = 'red';
-                cellStyle.color = 'white';
+        {/* <AutoSizer> */}
+
+        <MultiGrid
+          ref={ref}
+          cellRenderer={({ columnIndex, key, rowIndex, style }) => {
+            const cellStyle = { ...style }
+            cellStyle.backgroundColor = 'white';
+            cellStyle.textAlign = 'center';
+            cellStyle.display = 'flex';
+            cellStyle.justifyContent = 'center';
+            cellStyle.alignItems = 'center';
+            cellStyle.border = '1px solid #c8e1ff';
+
+            if (selectedData[rowIndex][columnIndex].isTop) {
+              cellStyle.backgroundColor = 'red';
+              cellStyle.color = 'white';
+            }
+            if (selectedData[rowIndex][columnIndex].isLeft) {
+              cellStyle.backgroundColor = 'black';
+              cellStyle.color = 'white';
+            }
+            if (selectedData[rowIndex][columnIndex].selected) {
+              cellStyle.backgroundColor = colors[(rowIndex + 1) % colors.length];
+            }
+            return <div key={key} style={cellStyle} onClick={() => {
+              if (selectedData[rowIndex][columnIndex].isTop || selectedData[rowIndex][columnIndex].isLeft || selectedData[rowIndex][columnIndex].data === '-') {
+                return;
               }
-              if (selectedData[rowIndex][columnIndex].isLeft) {
-                cellStyle.backgroundColor = 'black';
-                cellStyle.color = 'white';
-              }
-              if (selectedData[rowIndex][columnIndex].selected) {
-                cellStyle.backgroundColor = colors[(rowIndex + 1) % colors.length];
-              }
-              return <div key={key} style={cellStyle} onClick={() => {
-                if (selectedData[rowIndex][columnIndex].isTop || selectedData[rowIndex][columnIndex].isLeft || selectedData[rowIndex][columnIndex].data === '-') {
-                  return;
-                }
-                selectedData[rowIndex][columnIndex].selected = !selectedData[rowIndex][columnIndex].selected;
-                setSelectedData([...selectedData]);
-                ref.current?.forceUpdateGrids();
-              }}>
-                {selectedData[rowIndex][columnIndex].data}
-              </div>
-            }}
-            columnWidth={100}
-            columnCount={daysInMonth + 1}
-            fixedColumnCount={1}
-            fixedRowCount={1}
-            height={300}
-            rowHeight={40}
-            rowCount={selectedData.length}
-            width={700}
-          />
-        </main>
-      </div >
-    </>
+              selectedData[rowIndex][columnIndex].selected = !selectedData[rowIndex][columnIndex].selected;
+              setSelectedData([...selectedData]);
+              ref.current?.forceUpdateGrids();
+            }}>
+              {selectedData[rowIndex][columnIndex].data}
+            </div>
+          }}
+          columnWidth={60}
+          columnCount={daysInMonth + 1}
+          fixedColumnCount={1}
+          fixedRowCount={1}
+          height={500}
+          rowHeight={30}
+          rowCount={selectedData.length}
+          width={700}
+        />
+        {/* </AutoSizer> */}
+      </main>
+    </div >
+
   );
 }
 
