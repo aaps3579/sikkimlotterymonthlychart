@@ -273,10 +273,10 @@ export default function Home({ token }: InferGetServerSidePropsType<typeof getSe
           columnCount={daysInMonth + 1}
           fixedColumnCount={1}
           fixedRowCount={1}
-          height={500}
+          height={800}
           rowHeight={30}
           rowCount={selectedData.length}
-          width={1000}
+          width={400}
         />
       </main>
     </div >
