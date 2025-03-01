@@ -17,7 +17,6 @@ interface Props {
 }
 
 export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
-  console.log("getServerSideProps", context.req.headers.authorization);
   return {
     props: {
       token: context.req.headers.authorization ?? null
@@ -216,7 +215,7 @@ export default function Home({ token }: InferGetServerSidePropsType<typeof getSe
   return (
     <div className={`${styles.page}`}>
       <main className={styles.main} >
-        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', marginBottom: '16px', width: '100%', position: 'sticky', top: 0, backgroundColor: 'white', zIndex: 1000, padding: '8px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', marginRight: '16px' }}>
             <select onChange={(e) => changeChart(e.target.value)} value={chart} id="chart-select" style={{ padding: '4px', fontSize: '14px', width: '100px' }}>
               <option value="A">A Chart</option>
@@ -280,7 +279,7 @@ export default function Home({ token }: InferGetServerSidePropsType<typeof getSe
           width={400}
 
         />
-      </main>
+      </main >
     </div >
 
   );
