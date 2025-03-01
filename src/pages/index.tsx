@@ -248,6 +248,10 @@ export default function Home({ token }: InferGetServerSidePropsType<typeof getSe
             cellStyle.alignItems = 'center';
             cellStyle.border = '1px solid #c8e1ff';
             cellStyle.padding = '2px';
+            if (!selectedData[rowIndex][columnIndex].isTop && !selectedData[rowIndex][columnIndex].isLeft && selectedData[rowIndex][columnIndex].data !== '-') {
+              cellStyle.cursor = 'pointer';
+              cellStyle.fontWeight = 'bold';
+            }
 
             if (selectedData[rowIndex][columnIndex].isTop) {
               cellStyle.backgroundColor = 'red';
