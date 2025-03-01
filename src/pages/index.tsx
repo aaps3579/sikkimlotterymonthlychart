@@ -1,5 +1,5 @@
 import styles from "@/styles/Home.module.css";
-import { MultiGrid } from 'react-virtualized';
+import { AutoSizer, MultiGrid } from 'react-virtualized';
 import { useEffect, useState, useRef } from "react";
 import { DateTime } from 'luxon';
 import React from "react";
@@ -215,8 +215,8 @@ export default function Home({ token }: InferGetServerSidePropsType<typeof getSe
 
   return (
     <div className={`${styles.page}`}>
-      <main className={styles.main}>
-        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center' }}>
+      <main className={styles.main} >
+        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', marginBottom: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', marginRight: '16px' }}>
             <select onChange={(e) => changeChart(e.target.value)} value={chart} id="chart-select" style={{ padding: '4px', fontSize: '14px', width: '100px' }}>
               <option value="A">A Chart</option>
@@ -234,7 +234,6 @@ export default function Home({ token }: InferGetServerSidePropsType<typeof getSe
           </div>
         </div>
 
-        {/* <AutoSizer> */}
 
         <MultiGrid
           ref={ref}
@@ -246,6 +245,7 @@ export default function Home({ token }: InferGetServerSidePropsType<typeof getSe
             cellStyle.justifyContent = 'center';
             cellStyle.alignItems = 'center';
             cellStyle.border = '1px solid #c8e1ff';
+            cellStyle.padding = '2px';
 
             if (selectedData[rowIndex][columnIndex].isTop) {
               cellStyle.backgroundColor = 'red';
@@ -276,9 +276,8 @@ export default function Home({ token }: InferGetServerSidePropsType<typeof getSe
           height={500}
           rowHeight={30}
           rowCount={selectedData.length}
-          width={800}
+          width={1000}
         />
-        {/* </AutoSizer> */}
       </main>
     </div >
 
