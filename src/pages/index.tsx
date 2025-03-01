@@ -1,10 +1,9 @@
 import styles from "@/styles/Home.module.css";
-import { AutoSizer, MultiGrid } from 'react-virtualized';
+import { MultiGrid } from 'react-virtualized';
 import { useEffect, useState, useRef } from "react";
 import { DateTime } from 'luxon';
 import React from "react";
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
-import { get } from "http";
 
 interface cell {
   data: string;
