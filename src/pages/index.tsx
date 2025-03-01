@@ -233,7 +233,6 @@ export default function Home({ token }: InferGetServerSidePropsType<typeof getSe
           </div>
         </div>
 
-
         <MultiGrid
           ref={ref}
           cellRenderer={({ columnIndex, key, rowIndex, style }) => {
