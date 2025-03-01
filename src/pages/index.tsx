@@ -1,5 +1,5 @@
 import styles from "@/styles/Home.module.css";
-import { AutoSizer, MultiGrid } from 'react-virtualized';
+import { MultiGrid } from 'react-virtualized';
 import { useEffect, useState, useRef } from "react";
 import { DateTime } from 'luxon';
 import React from "react";
@@ -269,14 +269,16 @@ export default function Home({ token }: InferGetServerSidePropsType<typeof getSe
               {selectedData[rowIndex][columnIndex].data}
             </div>
           }}
-          columnWidth={60}
           columnCount={daysInMonth + 1}
           fixedColumnCount={1}
           fixedRowCount={1}
-          height={800}
-          rowHeight={30}
           rowCount={selectedData.length}
+
+          columnWidth={60}
+          rowHeight={30}
+          height={800}
           width={400}
+
         />
       </main>
     </div >
