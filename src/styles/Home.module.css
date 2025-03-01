@@ -8,11 +8,5 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-}
-
-@media (max-width: 600px) {
-    .page {
-        padding: 32px;
-        padding-bottom: 80px;
-    }
+    margin-bottom: 40px;
 }
