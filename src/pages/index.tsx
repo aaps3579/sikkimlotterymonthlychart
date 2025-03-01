@@ -203,18 +203,8 @@ export default function Home({ token }: InferGetServerSidePropsType<typeof getSe
     );
   }
   if (loading || selectedData.length === 0) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '20px', color: '#333' }}>
-        Loading...
-      </div>
-    );
+    return
   }
-
-
-
-
-
-
 
   return (
     <div className={`${styles.page}`}>
