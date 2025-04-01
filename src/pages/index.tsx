@@ -14,12 +14,16 @@ interface cell {
 
 interface Props {
   token: string | null;
+  cityId: string | null;
+  categoryId: string | null;
 }
 
 export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
   return {
     props: {
-      token: context.req.headers.authorization ?? null
+      token: context.req.headers.authorization ?? null,
+      cityId: context.req.headers['x-city-id'] as string ?? null,
+      categoryId: context.req.headers['x-category-id'] as string ?? null
     }
   }
 }
@@ -59,7 +63,7 @@ const colors = [
 ];
 
 
-export default function Home({ token }: InferGetServerSidePropsType<typeof getServerSideProps>) {
+export default function Home({ token, cityId, categoryId }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const daysInMonth = DateTime.now().daysInMonth;
 
   const [AChart, setAChart] = useState<Map<number, string>>(new Map<number, string>());
@@ -82,11 +86,13 @@ export default function Home({ token }: InferGetServerSidePropsType<typeof getSe
     const bChart = new Map<number, string>();
     const cChart = new Map<number, string>();
     for (const d of dates) {
-      const resp = await fetch(`https://firestore.googleapis.com/v1/projects/sikkim-lottery-e2faa/databases/(default)/documents/Sikkim Single/${d.toFormat("yyyy-MM-dd")}/values`, {
+      const resp = await fetch(`https://firestore.googleapis.com/v1/projects/sikkim-lottery-e2faa/databases/(default)/documents/Cities/${cityId}/categories/${categoryId}/data/${d.toFormat("yyyy-MM-dd")}/values`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
+          'x-city-id': cityId || '',
+          'x-category-id': categoryId || ''
         },
       })
       if (resp.status === 401 || resp.status === 403) {
@@ -279,4 +285,3 @@ export default function Home({ token }: InferGetServerSidePropsType<typeof getSe
 
   );
 }
-
