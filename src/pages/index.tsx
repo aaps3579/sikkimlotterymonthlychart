@@ -5,7 +5,7 @@ import { DateTime } from 'luxon';
 import React from "react";
 import { GetServerSideProps, InferGetServerSidePropsType } from 'next';
 
-interface cell {
+interface Cell {
   data: string;
   selected: boolean;
   isTop: boolean;
@@ -18,21 +18,11 @@ interface Props {
   categoryId: string | null;
 }
 
-export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
-  return {
-    props: {
-      token: context.req.headers.authorization ?? null,
-      cityId: context.req.headers['x-city-id'] as string ?? null,
-      categoryId: context.req.headers['x-category-id'] as string ?? null
-    }
-  }
+interface FirebaseData {
+  documents: FirebaseDocument[];
 }
 
-interface firebaseData {
-  documents: firebaseDocument[];
-}
-
-interface firebaseDocument {
+interface FirebaseDocument {
   name: string;
   fields: {
     data: {
@@ -49,178 +39,316 @@ interface firebaseDocument {
   createTime: string;
   updateTime: string;
 }
-const colors = [
-  "#FFFFE0", // Light Yellow
-  "#F5FFFA", // Mint Cream
-  "#E6E6FA", // Lavender
-  "#E0FFFF", // Light Cyan
-  "#FFDAB9", // Peach Puff
-  "#FAF0E6", // Linen
-  "#F0FFF0", // Honeydew
-  "#F0F8FF", // Alice Blue
-  "#FFF5EE", // Seashell
-  "#FFE4E1"  // Misty Rose
+
+interface HeadsDocument {
+  name: string;
+  fields: {
+    heads: {
+      arrayValue: {
+        values: {
+          stringValue: string;
+        }[]
+      }
+    }
+  }
+  createTime: string;
+  updateTime: string;
+}
+
+const COLORS = [
+  "#FFFFE0", "#F5FFFA", "#E6E6FA", "#E0FFFF", "#FFDAB9",
+  "#FAF0E6", "#F0FFF0", "#F0F8FF", "#FFF5EE", "#FFE4E1"
 ];
 
+const BASE_API_URL = 'https://firestore.googleapis.com/v1/projects/sikkim-lottery-e2faa/databases/(default)/documents';
+
+export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
+  return {
+    props: {
+      token: context.req.headers.authorization ?? null,
+      cityId: context.req.headers['x-city-id'] as string ?? null,
+      categoryId: context.req.headers['x-category-id'] as string ?? null
+    }
+  }
+}
 
 export default function Home({ token, cityId, categoryId }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const daysInMonth = DateTime.now().daysInMonth;
 
-  const [AChart, setAChart] = useState<Map<number, string>>(new Map<number, string>());
-  const [BChart, setBChart] = useState<Map<number, string>>(new Map<number, string>());
-  const [CChart, setCChart] = useState<Map<number, string>>(new Map<number, string>());
 
-  const [Adata, setAData] = useState<cell[][]>([]);
-  const [Bdata, setBData] = useState<cell[][]>([]);
-  const [Cdata, setCData] = useState<cell[][]>([]);
+  // Initialize states
+  const [heads, setHeads] = useState<string[]>([]);
+  const [chart, setChart] = useState<string>('');
+  const [chartData, setChartData] = useState<Record<string, Map<number, string>>>({});
+  const [gridData, setGridData] = useState<Record<string, Cell[][]>>({});
+  const [selectedData, setSelectedData] = useState<Cell[][]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isTokenInValid, setIsTokenInvalid] = useState(false);
 
-  const [selectedData, setSelectedData] = useState<cell[][]>([]);
+  const gridRef = useRef<MultiGrid>(null);
 
-  const [loading, setLoading] = useState<boolean>(true);
-  const [chart, setChart] = useState<string>("A");
-  const [isTokenInValid, setIsTokenInvalid] = useState<boolean>(false);
-  const ref = useRef<MultiGrid>(null);
-
-  async function fetchData(dates: DateTime[]) {
-    const aChart = new Map<number, string>();
-    const bChart = new Map<number, string>();
-    const cChart = new Map<number, string>();
-    for (const d of dates) {
-      const resp = await fetch(`https://firestore.googleapis.com/v1/projects/sikkim-lottery-e2faa/databases/(default)/documents/Cities/${cityId}/categories/${categoryId}/data/${d.toFormat("yyyy-MM-dd")}/values`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'x-city-id': cityId || '',
-          'x-category-id': categoryId || ''
-        },
-      })
-      if (resp.status === 401 || resp.status === 403) {
-        setIsTokenInvalid(true);
-        setLoading(false);
-        return;
-      }
-      const data: firebaseData = await resp.json();
-
-      if (data.documents && data.documents.length > 0) {
-        data.documents.forEach((doc) => {
-          if (doc.fields.data.arrayValue.values.length > 0) {
-            const time = DateTime.fromISO(doc.fields.ts.stringValue).valueOf();
-            doc.fields.data.arrayValue.values.forEach((value, idx) => {
-              if (idx === 0) {
-                aChart.set(time, value.integerValue);
-              } else if (idx === 1) {
-                bChart.set(time, value.integerValue);
-              } else if (idx === 2) {
-                cChart.set(time, value.integerValue);
-              }
-            });
-          }
-        })
-      }
-    }
-    setAChart(aChart);
-    setBChart(bChart);
-    setCChart(cChart);
+  const handleAuthError = () => {
+    setIsTokenInvalid(true);
     setLoading(false);
+  };
+
+  // Fetch heads first
+  async function fetchHeads(): Promise<string[] | void> {
+    try {
+      const headsResp = await fetch(
+        `${BASE_API_URL}/Cities/${cityId}/categories/${categoryId}?mask.fieldPaths=heads`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (!headsResp.ok) {
+        if (headsResp.status === 401 || headsResp.status === 403) {
+          return handleAuthError();
+        }
+        throw new Error(`Failed to fetch heads: ${headsResp.statusText}`);
+      }
+
+      const headsDocument: HeadsDocument = await headsResp.json();
+      const fetchedHeads = headsDocument.fields.heads.arrayValue.values.map(v => v.stringValue);
+      setHeads(fetchedHeads);
+      setChart(fetchedHeads[0]); // Set initial chart
+      return fetchedHeads;
+    } catch (error) {
+      console.error('Error fetching heads:', error);
+      setLoading(false);
+      return [];
+    }
+
+  }
+
+  // Then fetch data and initialize charts
+  async function fetchData(dates: DateTime[], fetchedHeads: string[]) {
+
+
+    try {
+      const newChartData: Record<string, Map<number, string>> = {};
+      fetchedHeads.forEach(head => {
+        newChartData[head] = new Map<number, string>();
+      });
+
+      for (const date of dates) {
+        const dataResp = await fetch(
+          `${BASE_API_URL}/Cities/${cityId}/categories/${categoryId}/data/${date.toFormat("yyyy-MM-dd")}/values`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (!dataResp.ok) {
+          if (dataResp.status === 401 || dataResp.status === 403) {
+            return handleAuthError();
+          }
+          throw new Error(`Failed to fetch data: ${dataResp.statusText}`);
+        }
+
+        const data: FirebaseData = await dataResp.json();
+
+        if (data.documents?.length) {
+          data.documents.forEach(doc => {
+            const values = doc.fields.data.arrayValue.values;
+            if (values.length) {
+              const time = DateTime.fromISO(doc.fields.ts.stringValue).valueOf();
+              values.forEach((value, idx) => {
+                if (idx < fetchedHeads.length) {
+                  newChartData[fetchedHeads[idx]].set(time, value.integerValue);
+                }
+              });
+            }
+          });
+        }
+      }
+
+      setChartData(newChartData);
+      setLoading(false);
+
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
-    const headerRow: cell[] = [{ data: 'Time', selected: false, isTop: true, isLeft: true }];
+    const headerRow: Cell[] = [{ data: 'Time', selected: false, isTop: true, isLeft: true }];
     const dates: DateTime[] = [];
+
     for (let i = 0; i < daysInMonth; i++) {
-      const d = DateTime.now().minus({ days: i })
+      const d = DateTime.now().minus({ days: i });
       headerRow.push({ data: d.toFormat("dd\nMMM"), selected: false, isTop: true, isLeft: false });
       dates.push(d);
     }
-    Adata.push(headerRow);
-    Bdata.push(headerRow);
-    Cdata.push(headerRow);
-    setAData(Adata);
-    setBData(Bdata);
-    setCData(Cdata);
-    fetchData(dates);
+
+    // First fetch heads, then fetch data
+    fetchHeads().then(fetchedHeads => {
+      if (!fetchedHeads) return;
+      const initialGridData: Record<string, Cell[][]> = {};
+      fetchedHeads.forEach(head => {
+        initialGridData[head] = [headerRow];
+      });
+      setGridData(initialGridData);
+      fetchData(dates, fetchedHeads);
+    });
   }, []);
 
   useEffect(() => {
-    if (loading)
-      return
-    if (isTokenInValid) {
-      return
-    }
+    if (loading || isTokenInValid) return;
+
+    console.log('loading', loading);
+    console.log('isTokenInValid', isTokenInValid);
+    console.log('chartData', chartData);
     const now = DateTime.now();
     let time = DateTime.now().set({ hour: 8, minute: 30, second: 0, millisecond: 0 });
-    while (true) {
-      const rowA: cell[] = [{ data: time.toFormat('HH:mm\na'), selected: false, isTop: false, isLeft: true }];
-      const rowB: cell[] = [{ data: time.toFormat('HH:mm\na'), selected: false, isTop: false, isLeft: true }];
-      const rowC: cell[] = [{ data: time.toFormat('HH:mm\na'), selected: false, isTop: false, isLeft: true }];
+    const newGridData = { ...gridData };
+    console.log('newGridData', newGridData);
+    while (time.hour !== 23) {
+      const timeStr = time.toFormat('HH:mm\na');
+      const baseCell = { data: timeStr, selected: false, isTop: false, isLeft: true };
 
-      for (let i = 0; i < daysInMonth; i++) {
-        time = time.minus({ days: 1 });
-        rowA.push({ data: AChart.get(time.valueOf()) ?? "-", selected: false, isTop: false, isLeft: false });
-        rowB.push({ data: BChart.get(time.valueOf()) ?? "-", selected: false, isTop: false, isLeft: false });
-        rowC.push({ data: CChart.get(time.valueOf()) ?? "-", selected: false, isTop: false, isLeft: false });
-      }
-      Adata.push(rowA);
-      Bdata.push(rowB);
-      Cdata.push(rowC);
-      if (time.hour === 23) {
-        break;
-      }
-      time = time.plus({ minutes: 15 });
-      time = time.set({ year: now.year, month: now.month, day: now.day, second: 0, millisecond: 0 });
+      heads.forEach(head => {
+        const row: Cell[] = [{ ...baseCell }];
+
+        for (let i = 0; i < daysInMonth; i++) {
+          time = time.minus({ days: 1 });
+          const timeValue = time.valueOf();
+
+          row.push({ data: chartData[head].get(timeValue) ?? "-", selected: false, isTop: false, isLeft: false });
+        }
+
+        newGridData[head].push(row);
+      });
+
+      time = time.plus({ minutes: 15 })
+        .set({ year: now.year, month: now.month, day: now.day, second: 0, millisecond: 0 });
     }
-    setAData(Adata);
-    setBData(Bdata);
-    setCData(Cdata);
-    setSelectedData(Adata);
+
+    setGridData(newGridData);
+    setSelectedData(newGridData[chart]);
   }, [loading]);
 
   const selectAll = (isChecked: boolean) => {
-    const updatedData = [...selectedData];
-    for (let i = 1; i < selectedData.length; i++) {
-      for (let j = 1; j < selectedData[i].length; j++) {
-        if (selectedData[i][j].isTop || selectedData[i][j].isLeft || selectedData[i][j].data === '-') {
-          continue;
+    setSelectedData(prevData => {
+      const newData = [...prevData];
+      for (let i = 1; i < newData.length; i++) {
+        for (let j = 1; j < newData[i].length; j++) {
+          if (!newData[i][j].isTop && !newData[i][j].isLeft && newData[i][j].data !== '-') {
+            newData[i][j].selected = isChecked;
+          }
         }
-        updatedData[i][j].selected = isChecked;
       }
-    }
-    setSelectedData(updatedData);
-    ref.current?.forceUpdateGrids();
-  }
+      return newData;
+    });
+    gridRef.current?.forceUpdateGrids();
+  };
 
-  const changeChart = (chart: string) => {
-    if (chart === 'A') {
-      setSelectedData(Adata);
-    } else if (chart === 'B') {
-      setSelectedData(Bdata);
-    } else if (chart === 'C') {
-      setSelectedData(Cdata);
-    }
-    setChart(chart);
-    ref.current?.forceUpdateGrids();
-  }
+  const changeChart = (newChart: string) => {
+    setSelectedData(gridData[newChart]);
+    setChart(newChart);
+    gridRef.current?.forceUpdateGrids();
+  };
+
   if (isTokenInValid) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '20px', color: '#333' }}>
-        Unauthorized
+      <div className={styles.errorContainer}>
+        <div className={styles.errorBox}>
+          <h2>Unauthorized Access</h2>
+          <p>You do not have permission to view this content. Please check your credentials and try again.</p>
+        </div>
       </div>
     );
   }
-  if (loading || selectedData.length === 0) {
-    return
+
+  if (loading) {
+    return (
+      <div className={styles.loadingContainer}>
+        <div className={styles.loadingSpinner}></div>
+        <p>Loading data...</p>
+      </div>
+    );
   }
+
+  if (selectedData.length === 0) {
+    return (
+      <div className={styles.errorContainer}>
+        <div className={styles.errorBox}>
+          <h2>No Data Available</h2>
+          <p>There is no data to display at this time. Please try again later.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const cellRenderer = ({ columnIndex, key, rowIndex, style }: { columnIndex: number, key: string, rowIndex: number, style: React.CSSProperties }) => {
+    const cell = selectedData[rowIndex][columnIndex];
+    const cellStyle = {
+      ...style,
+      backgroundColor: 'white',
+      textAlign: 'center',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      border: '1px solid #c8e1ff',
+      padding: '2px',
+      ...(cell.isTop && { backgroundColor: 'red', color: 'white' }),
+      ...(cell.isLeft && { backgroundColor: 'black', color: 'white' }),
+      ...(cell.selected && { backgroundColor: COLORS[(rowIndex + 1) % COLORS.length] }),
+      ...(!cell.isTop && !cell.isLeft && cell.data !== '-' && { cursor: 'pointer', fontWeight: 'bold' })
+    };
+
+    const handleClick = () => {
+      if (cell.isTop || cell.isLeft || cell.data === '-') return;
+
+      setSelectedData(prevData => {
+        const newData = [...prevData];
+        newData[rowIndex][columnIndex].selected = !cell.selected;
+        return newData;
+      });
+      gridRef.current?.forceUpdateGrids();
+    };
+
+    return (
+      <div key={key} style={cellStyle as React.CSSProperties} onClick={handleClick}>
+        {cell.data}
+      </div>
+    );
+  };
 
   return (
     <div className={`${styles.page}`}>
-      <main className={styles.main} >
-        <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', marginBottom: '16px', width: '100%', position: 'sticky', top: 0, backgroundColor: 'white', zIndex: 1000, padding: '8px 0' }}>
+      <main className={styles.main}>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'row',
+          justifyContent: 'flex-start',
+          alignItems: 'center',
+          marginBottom: '16px',
+          width: '100%',
+          position: 'sticky',
+          top: 0,
+          backgroundColor: 'white',
+          zIndex: 1000,
+          padding: '8px 0'
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', marginRight: '16px' }}>
-            <select onChange={(e) => changeChart(e.target.value)} value={chart} id="chart-select" style={{ padding: '4px', fontSize: '14px', width: '100px' }}>
-              <option value="A">A Chart</option>
-              <option value="B">B Chart</option>
-              <option value="C">C Chart</option>
+            <select
+              onChange={(e) => changeChart(e.target.value)}
+              value={chart}
+              id="chart-select"
+              style={{ padding: '4px', fontSize: '14px', width: '100px' }}
+            >
+              {heads.map((head, index) => (
+                <option key={index} value={head}>{head} Chart</option>
+              ))}
             </select>
           </div>
           <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -234,43 +362,8 @@ export default function Home({ token, cityId, categoryId }: InferGetServerSidePr
         </div>
 
         <MultiGrid
-          ref={ref}
-          cellRenderer={({ columnIndex, key, rowIndex, style }) => {
-            const cellStyle = { ...style }
-            cellStyle.backgroundColor = 'white';
-            cellStyle.textAlign = 'center';
-            cellStyle.display = 'flex';
-            cellStyle.justifyContent = 'center';
-            cellStyle.alignItems = 'center';
-            cellStyle.border = '1px solid #c8e1ff';
-            cellStyle.padding = '2px';
-            if (!selectedData[rowIndex][columnIndex].isTop && !selectedData[rowIndex][columnIndex].isLeft && selectedData[rowIndex][columnIndex].data !== '-') {
-              cellStyle.cursor = 'pointer';
-              cellStyle.fontWeight = 'bold';
-            }
-
-            if (selectedData[rowIndex][columnIndex].isTop) {
-              cellStyle.backgroundColor = 'red';
-              cellStyle.color = 'white';
-            }
-            if (selectedData[rowIndex][columnIndex].isLeft) {
-              cellStyle.backgroundColor = 'black';
-              cellStyle.color = 'white';
-            }
-            if (selectedData[rowIndex][columnIndex].selected) {
-              cellStyle.backgroundColor = colors[(rowIndex + 1) % colors.length];
-            }
-            return <div key={key} style={cellStyle} onClick={() => {
-              if (selectedData[rowIndex][columnIndex].isTop || selectedData[rowIndex][columnIndex].isLeft || selectedData[rowIndex][columnIndex].data === '-') {
-                return;
-              }
-              selectedData[rowIndex][columnIndex].selected = !selectedData[rowIndex][columnIndex].selected;
-              setSelectedData([...selectedData]);
-              ref.current?.forceUpdateGrids();
-            }}>
-              {selectedData[rowIndex][columnIndex].data}
-            </div>
-          }}
+          ref={gridRef}
+          cellRenderer={cellRenderer}
           columnCount={daysInMonth + 1}
           fixedColumnCount={1}
           fixedRowCount={1}
@@ -280,8 +373,7 @@ export default function Home({ token, cityId, categoryId }: InferGetServerSidePr
           height={Math.round(window.innerHeight) - 100}
           width={400}
         />
-      </main >
-    </div >
-
+      </main>
+    </div>
   );
 }
