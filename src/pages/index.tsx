@@ -75,7 +75,6 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
 export default function Home({ token, cityId, categoryId }: InferGetServerSidePropsType<typeof getServerSideProps>) {
   const daysInMonth = DateTime.now().daysInMonth;
 
-
   // Initialize states
   const [heads, setHeads] = useState<string[]>([]);
   const [chart, setChart] = useState<string>('');
@@ -127,16 +126,15 @@ export default function Home({ token, cityId, categoryId }: InferGetServerSidePr
 
   // Then fetch data and initialize charts
   async function fetchData(dates: DateTime[], fetchedHeads: string[]) {
-
-
     try {
       const newChartData: Record<string, Map<number, string>> = {};
       fetchedHeads.forEach(head => {
         newChartData[head] = new Map<number, string>();
       });
 
+      const promises = [];
       for (const date of dates) {
-        const dataResp = await fetch(
+        promises.push(fetch(
           `${BASE_API_URL}/Cities/${cityId}/categories/${categoryId}/data/${date.toFormat("yyyy-MM-dd")}/values`,
           {
             headers: {
@@ -144,8 +142,11 @@ export default function Home({ token, cityId, categoryId }: InferGetServerSidePr
               'Content-Type': 'application/json'
             }
           }
-        );
+        ));
+      }
 
+      const dataResps = await Promise.all(promises);
+      for (const dataResp of dataResps) {
         if (!dataResp.ok) {
           if (dataResp.status === 401 || dataResp.status === 403) {
             return handleAuthError();
@@ -154,7 +155,6 @@ export default function Home({ token, cityId, categoryId }: InferGetServerSidePr
         }
 
         const data: FirebaseData = await dataResp.json();
-
         if (data.documents?.length) {
           data.documents.forEach(doc => {
             const values = doc.fields.data.arrayValue.values;
@@ -204,13 +204,9 @@ export default function Home({ token, cityId, categoryId }: InferGetServerSidePr
   useEffect(() => {
     if (loading || isTokenInValid) return;
 
-    console.log('loading', loading);
-    console.log('isTokenInValid', isTokenInValid);
-    console.log('chartData', chartData);
     const now = DateTime.now();
     let time = DateTime.now().set({ hour: 8, minute: 30, second: 0, millisecond: 0 });
     const newGridData = { ...gridData };
-    console.log('newGridData', newGridData);
     while (time.hour !== 23) {
       const timeStr = time.toFormat('HH:mm\na');
       const baseCell = { data: timeStr, selected: false, isTop: false, isLeft: true };
@@ -268,7 +264,7 @@ export default function Home({ token, cityId, categoryId }: InferGetServerSidePr
     );
   }
 
-  if (loading) {
+  if (loading || selectedData.length === 0) {
     return (
       <div className={styles.loadingContainer}>
         <div className={styles.loadingSpinner}></div>
@@ -277,16 +273,16 @@ export default function Home({ token, cityId, categoryId }: InferGetServerSidePr
     );
   }
 
-  if (selectedData.length === 0) {
-    return (
-      <div className={styles.errorContainer}>
-        <div className={styles.errorBox}>
-          <h2>No Data Available</h2>
-          <p>There is no data to display at this time. Please try again later.</p>
-        </div>
-      </div>
-    );
-  }
+  // if (selectedData.length === 0) {
+  //   return (
+  //     <div className={styles.errorContainer}>
+  //       <div className={styles.errorBox}>
+  //         <h2>No Data Available</h2>
+  //         <p>There is no data to display at this time. Please try again later.</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   const cellRenderer = ({ columnIndex, key, rowIndex, style }: { columnIndex: number, key: string, rowIndex: number, style: React.CSSProperties }) => {
     const cell = selectedData[rowIndex][columnIndex];
