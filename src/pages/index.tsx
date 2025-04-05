@@ -73,8 +73,12 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
 }
 
 export default function Home({ token, cityId, categoryId }: InferGetServerSidePropsType<typeof getServerSideProps>) {
-  const daysInMonth = DateTime.now().daysInMonth;
 
+  token = 'eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5ZGRjYTc2YzEyMzMyNmI5ZTJlODJkOGFjNDg0MWU1MzMyMmI3NmEiLCJ0eXAiOiJKV1QifQ.eyJwcm92aWRlcl9pZCI6ImFub255bW91cyIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9zaWtraW0tbG90dGVyeS1lMmZhYSIsImF1ZCI6InNpa2tpbS1sb3R0ZXJ5LWUyZmFhIiwiYXV0aF90aW1lIjoxNzQzODUzMTIxLCJ1c2VyX2lkIjoiUWtKajNGMGRnRFI5NjQ2Y0RWc1hGUWRZYU9CMiIsInN1YiI6IlFrSmozRjBkZ0RSOTY0NmNEVnNYRlFkWWFPQjIiLCJpYXQiOjE3NDM4NzA0MDMsImV4cCI6MTc0Mzg3NDAwMywiZmlyZWJhc2UiOnsiaWRlbnRpdGllcyI6e30sInNpZ25faW5fcHJvdmlkZXIiOiJhbm9ueW1vdXMifX0.UHnNSpFhwP3Rae_kKH5wBEp7y5DTpUe7cKuvpxMbB9QHbPTnuu4XEAHtp1HasuvnOWm7ngEq9ruEPpREab4Jfv_JBWYMZkdeIzKCk4gOgHi6X_LaXUyr3XmGD2gDdt5ssUVm5hki_PD2RRE-nDhhNPVzCwkhwB24F_XlHLnb0PINtsx1zcDe6DpEHkGmrkxjAiL9g0aUTXhWNg-oqFz-olGvCP1fzcSORTOQQenjmmyExFnr1nnT8NvzHKwnHASIu_qSkRjPpAGAcXwX9Fpp1dW1FBhYyELQGLhAzJeXGRkWmCGw5fxrHkWO4tLbA3G7PgpQ2T7K-YOtIGpJF6W1Vw'
+  cityId = 'jUGWrf1k6sxcZiBBz8pG'
+  categoryId = '6vXHyCHxzbXcf9bJG9fG'
+
+  const daysInMonth = DateTime.now().daysInMonth;
   // Initialize states
   const [heads, setHeads] = useState<string[]>([]);
   const [chart, setChart] = useState<string>('');
@@ -204,28 +208,39 @@ export default function Home({ token, cityId, categoryId }: InferGetServerSidePr
   useEffect(() => {
     if (loading || isTokenInValid) return;
 
-    const now = DateTime.now();
     let time = DateTime.now().set({ hour: 8, minute: 30, second: 0, millisecond: 0 });
     const newGridData = { ...gridData };
-    while (time.hour !== 23) {
+
+    while (time.hour <= 23) {
       const timeStr = time.toFormat('HH:mm\na');
       const baseCell = { data: timeStr, selected: false, isTop: false, isLeft: true };
 
       heads.forEach(head => {
         const row: Cell[] = [{ ...baseCell }];
+        let dayTime = time;
 
         for (let i = 0; i < daysInMonth; i++) {
-          time = time.minus({ days: 1 });
-          const timeValue = time.valueOf();
-
-          row.push({ data: chartData[head].get(timeValue) ?? "-", selected: false, isTop: false, isLeft: false });
+          // Create a new DateTime for each day at the current time
+          const currentDayTime = dayTime.minus({ days: i });
+          const timeValue = currentDayTime.valueOf();
+          row.push({
+            data: chartData[head].get(timeValue) ?? "-",
+            selected: false,
+            isTop: false,
+            isLeft: false
+          });
         }
 
         newGridData[head].push(row);
       });
 
-      time = time.plus({ minutes: 15 })
-        .set({ year: now.year, month: now.month, day: now.day, second: 0, millisecond: 0 });
+      // Move to next 15-minute interval
+      time = time.plus({ minutes: 15 });
+
+      // Stop if we've passed 23:00
+      if (time.hour === 23 && time.minute > 0) {
+        break;
+      }
     }
 
     setGridData(newGridData);
