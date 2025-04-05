@@ -217,7 +217,7 @@ export default function Home({ token, cityId, categoryId }: InferGetServerSidePr
 
       heads.forEach(head => {
         const row: Cell[] = [{ ...baseCell }];
-        let dayTime = time;
+        const dayTime = time;
 
         for (let i = 0; i < daysInMonth; i++) {
           // Create a new DateTime for each day at the current time
