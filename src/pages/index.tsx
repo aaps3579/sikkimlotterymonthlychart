@@ -288,16 +288,6 @@ export default function Home({ token, cityId, categoryId }: InferGetServerSidePr
     );
   }
 
-  // if (selectedData.length === 0) {
-  //   return (
-  //     <div className={styles.errorContainer}>
-  //       <div className={styles.errorBox}>
-  //         <h2>No Data Available</h2>
-  //         <p>There is no data to display at this time. Please try again later.</p>
-  //       </div>
-  //     </div>
-  //   );
-  // }
 
   const cellRenderer = ({ columnIndex, key, rowIndex, style }: { columnIndex: number, key: string, rowIndex: number, style: React.CSSProperties }) => {
     const cell = selectedData[rowIndex][columnIndex];
@@ -350,25 +340,70 @@ export default function Home({ token, cityId, categoryId }: InferGetServerSidePr
           zIndex: 1000,
           padding: '8px 0'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginRight: '16px' }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            marginRight: '16px'
+          }}>
             <select
               onChange={(e) => changeChart(e.target.value)}
               value={chart}
               id="chart-select"
-              style={{ padding: '4px', fontSize: '14px', width: '100px' }}
+              style={{
+                padding: '8px 12px',
+                fontSize: '14px',
+                width: '120px',
+                borderRadius: '4px',
+                border: '1px solid #ddd',
+                backgroundColor: '#fff',
+                cursor: 'pointer',
+                outline: 'none',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                transition: 'all 0.2s ease',
+                appearance: 'none',
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z' fill='%23333'/%3E%3C/svg%3E")`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 8px center'
+              }}
             >
               {heads.map((head, index) => (
-                <option key={index} value={head}>{head} Chart</option>
+                <option
+                  key={index}
+                  value={head}
+                  style={{
+                    padding: '8px',
+                    fontSize: '14px'
+                  }}
+                >
+                  {head} Chart
+                </option>
               ))}
             </select>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            backgroundColor: '#f5f5f5',
+            padding: '4px 8px',
+            borderRadius: '4px',
+            border: '1px solid #ddd'
+          }}>
             <input
               type="checkbox"
               onChange={(e) => selectAll(e.target.checked)}
-              style={{ marginRight: '8px' }}
+              style={{
+                marginRight: '8px',
+                cursor: 'pointer',
+                width: '16px',
+                height: '16px'
+              }}
             />
-            <label style={{ fontSize: '14px', color: '#333' }}>Select All</label>
+            <label style={{
+              fontSize: '14px',
+              color: '#333',
+              userSelect: 'none',
+              cursor: 'pointer'
+            }}>Select All</label>
           </div>
         </div>
 
