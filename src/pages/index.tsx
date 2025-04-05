@@ -74,10 +74,6 @@ export const getServerSideProps: GetServerSideProps<Props> = async (context) => 
 
 export default function Home({ token, cityId, categoryId }: InferGetServerSidePropsType<typeof getServerSideProps>) {
 
-  token = 'eyJhbGciOiJSUzI1NiIsImtpZCI6ImE5ZGRjYTc2YzEyMzMyNmI5ZTJlODJkOGFjNDg0MWU1MzMyMmI3NmEiLCJ0eXAiOiJKV1QifQ.eyJwcm92aWRlcl9pZCI6ImFub255bW91cyIsImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9zaWtraW0tbG90dGVyeS1lMmZhYSIsImF1ZCI6InNpa2tpbS1sb3R0ZXJ5LWUyZmFhIiwiYXV0aF90aW1lIjoxNzQzODUzMTIxLCJ1c2VyX2lkIjoiUWtKajNGMGRnRFI5NjQ2Y0RWc1hGUWRZYU9CMiIsInN1YiI6IlFrSmozRjBkZ0RSOTY0NmNEVnNYRlFkWWFPQjIiLCJpYXQiOjE3NDM4NzA0MDMsImV4cCI6MTc0Mzg3NDAwMywiZmlyZWJhc2UiOnsiaWRlbnRpdGllcyI6e30sInNpZ25faW5fcHJvdmlkZXIiOiJhbm9ueW1vdXMifX0.UHnNSpFhwP3Rae_kKH5wBEp7y5DTpUe7cKuvpxMbB9QHbPTnuu4XEAHtp1HasuvnOWm7ngEq9ruEPpREab4Jfv_JBWYMZkdeIzKCk4gOgHi6X_LaXUyr3XmGD2gDdt5ssUVm5hki_PD2RRE-nDhhNPVzCwkhwB24F_XlHLnb0PINtsx1zcDe6DpEHkGmrkxjAiL9g0aUTXhWNg-oqFz-olGvCP1fzcSORTOQQenjmmyExFnr1nnT8NvzHKwnHASIu_qSkRjPpAGAcXwX9Fpp1dW1FBhYyELQGLhAzJeXGRkWmCGw5fxrHkWO4tLbA3G7PgpQ2T7K-YOtIGpJF6W1Vw'
-  cityId = 'jUGWrf1k6sxcZiBBz8pG'
-  categoryId = '6vXHyCHxzbXcf9bJG9fG'
-
   const daysInMonth = DateTime.now().daysInMonth;
   // Initialize states
   const [heads, setHeads] = useState<string[]>([]);
